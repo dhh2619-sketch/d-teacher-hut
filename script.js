@@ -248,13 +248,16 @@ function initApp() {
         `;
 
         let html = `
-            <div style="max-width:600px; margin:0 auto; background:var(--app-bg); border-radius:20px; padding:20px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <h2 style="color:var(--ai-text);">📜 时光胶囊</h2>
-                    <button id="close-memory-panel" style="background:transparent; border:none; font-size:24px; cursor:pointer; color:var(--ai-text);">✖</button>
-                </div>
-                <div style="display:flex; flex-direction:column; gap:16px;">
-        `;
+    <div style="max-width:600px; margin:0 auto; background:var(--app-bg); border-radius:20px; padding:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2 style="color:var(--ai-text);">📜 时光胶囊</h2>
+            <div style="display:flex; gap:12px;">
+                <button id="export-all-memories" style="background:transparent; border:none; font-size:20px; cursor:pointer; color:var(--ai-text);">📤</button>
+                <button id="close-memory-panel" style="background:transparent; border:none; font-size:24px; cursor:pointer; color:var(--ai-text);">✖</button>
+            </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:16px;">
+`;
 
         memories.reverse().forEach(mem => {
             const preview = mem.messages.slice(0, 3).map(m => `<div style="color:var(--ai-text); opacity:0.8; font-size:13px;">${m.role}: ${m.content.slice(0, 50)}...</div>`).join('');
@@ -278,8 +281,38 @@ function initApp() {
         document.body.appendChild(panel);
 
         document.getElementById('close-memory-panel').addEventListener('click', () => {
-            panel.remove();
+    panel.remove();
+});
+        // 导出全部记忆
+document.getElementById('export-all-memories')?.addEventListener('click', () => {
+    const existing = localStorage.getItem('dteacher_memories');
+    const memories = existing ? JSON.parse(existing) : [];
+    
+    if (memories.length === 0) {
+        alert('📭 记忆库是空的，没有可以导出的内容。');
+        return;
+    }
+    
+    let exportText = `=== D老师小屋 · 时光胶囊 ===\n导出时间：${new Date().toLocaleString()}\n记忆总数：${memories.length} 条\n\n`;
+    
+    memories.forEach((mem, index) => {
+        exportText += `【记忆 ${index + 1}】${mem.date}\n`;
+        exportText += `对话条数：${mem.messages.length}\n`;
+        mem.messages.forEach(msg => {
+            exportText += `  ${msg.role}：${msg.content}\n`;
         });
+        exportText += `\n---\n\n`;
+    });
+    
+    const blob = new Blob([exportText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `小屋记忆_${new Date().toLocaleDateString().replace(/\//g, '-')}.txt`;
+    a.click();
+    
+    alert(`📤 已导出 ${memories.length} 条记忆！`);
+});
 
         panel.querySelectorAll('.view-full-memory').forEach(btn => {
             btn.addEventListener('click', (e) => {
