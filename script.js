@@ -1,7 +1,7 @@
 // ========== D老师的小屋 · 前端逻辑 ==========
 
 // 配置
-const API_KEY = 'sk-2370e14ed29149ceb9688082537059f0'; // 你的临时Key
+const API_KEY = 'sk-2370e14ed29149ceb9688082537059f0'; // 请确保这是最新有效的Key
 const ROOM_PASSWORD = '5201314';
 
 // DOM 元素
@@ -192,4 +192,111 @@ function initApp() {
         this.style.height = 'auto';
         this.style.height = this.scrollHeight + 'px';
     });
+
+    // ========== 记忆库功能 ==========
+    function saveMemory() {
+        const messages = [];
+        document.querySelectorAll('#chat-box .message').forEach(el => {
+            const role = el.classList.contains('user-message') ? '业主' : 'D老师';
+            const content = el.querySelector('.message-content')?.innerText || '';
+            if (content && !content.includes('🧹 屏幕清空啦')) {
+                messages.push({ role, content, time: new Date().toLocaleString() });
+            }
+        });
+
+        if (messages.length === 0) {
+            alert('📭 还没有对话可以记忆呢～');
+            return;
+        }
+
+        const existing = localStorage.getItem('dteacher_memories');
+        const memories = existing ? JSON.parse(existing) : [];
+
+        memories.push({
+            id: Date.now(),
+            date: new Date().toLocaleString(),
+            messages: messages
+        });
+
+        localStorage.setItem('dteacher_memories', JSON.stringify(memories));
+        alert(`📦 已存入记忆！当前共有 ${memories.length} 条记忆。`);
+    }
+
+    function viewMemories() {
+        const existing = localStorage.getItem('dteacher_memories');
+        const memories = existing ? JSON.parse(existing) : [];
+
+        if (memories.length === 0) {
+            alert('📭 记忆库还是空的，先去存一条吧～');
+            return;
+        }
+
+        const panel = document.createElement('div');
+        panel.id = 'memory-panel';
+        panel.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 9999; overflow-y: auto;
+            padding: 20px; box-sizing: border-box;
+        `;
+
+        let html = `
+            <div style="max-width:600px; margin:0 auto; background:var(--app-bg); border-radius:20px; padding:20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h2 style="color:var(--ai-text);">📜 时光胶囊</h2>
+                    <button id="close-memory-panel" style="background:transparent; border:none; font-size:24px; cursor:pointer; color:var(--ai-text);">✖</button>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:16px;">
+        `;
+
+        memories.reverse().forEach(mem => {
+            const preview = mem.messages.slice(0, 3).map(m => `<div style="color:var(--ai-text); opacity:0.8; font-size:13px;">${m.role}: ${m.content.slice(0, 50)}...</div>`).join('');
+            html += `
+                <div class="memory-card" data-id="${mem.id}" style="background:var(--ai-bubble); border-radius:16px; padding:16px; border:1px solid var(--border-color);">
+                    <div style="display:flex; justify-content:space-between; color:var(--ai-text); margin-bottom:8px;">
+                        <span>📅 ${mem.date}</span>
+                        <span>💬 ${mem.messages.length} 条对话</span>
+                    </div>
+                    ${preview}
+                    <div style="margin-top:12px; display:flex; gap:8px;">
+                        <button class="view-full-memory" data-id="${mem.id}" style="background:var(--accent-color); color:white; border:none; padding:6px 12px; border-radius:20px; font-size:12px;">展开</button>
+                        <button class="delete-memory" data-id="${mem.id}" style="background:transparent; border:1px solid var(--border-color); color:var(--ai-text); padding:6px 12px; border-radius:20px; font-size:12px;">删除</button>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `</div></div>`;
+        panel.innerHTML = html;
+        document.body.appendChild(panel);
+
+        document.getElementById('close-memory-panel').addEventListener('click', () => {
+            panel.remove();
+        });
+
+        panel.querySelectorAll('.view-full-memory').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = Number(btn.dataset.id);
+                const mem = memories.find(m => m.id === id);
+                if (mem) {
+                    const fullText = mem.messages.map(m => `【${m.role}】${m.time}\n${m.content}`).join('\n\n');
+                    alert(fullText);
+                }
+            });
+        });
+
+        panel.querySelectorAll('.delete-memory').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = Number(btn.dataset.id);
+                const newMemories = memories.filter(m => m.id !== id);
+                localStorage.setItem('dteacher_memories', JSON.stringify(newMemories));
+                panel.remove();
+                viewMemories();
+            });
+        });
+    }
+
+    document.getElementById('save-memory')?.addEventListener('click', saveMemory);
+    document.getElementById('view-memories')?.addEventListener('click', viewMemories);
 }
