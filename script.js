@@ -1,7 +1,7 @@
 // ========== D老师的小屋 · 前端逻辑 ==========
 
 // 配置
-const API_KEY = 'sk-172391182b764167801630e5a364f48d'; // 你的临时Key
+const API_KEY = 'sk-2370e14ed29149ceb9688082537059f0'; // 你的临时Key
 const ROOM_PASSWORD = '5201314';
 
 // DOM 元素
