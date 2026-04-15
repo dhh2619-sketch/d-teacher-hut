@@ -1,0 +1,304 @@
+/* ========== D老师的小屋 · 样式表 ========== */
+
+:root {
+    --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    --app-bg: rgba(255, 255, 255, 0.85);
+    --user-bubble: #1a1a2c;
+    --user-text: white;
+    --ai-bubble: rgba(255, 255, 255, 0.95);
+    --ai-text: #1e1e2a;
+    --accent-color: #1a1a2c;
+    --border-radius-bubble: 20px;
+    --border-color: rgba(255, 255, 255, 0.5);
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg-gradient);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    transition: background 0.3s;
+}
+
+#app-container {
+    width: 100%;
+    max-width: 600px;
+    height: calc(100vh - 24px);
+    max-height: 900px;
+}
+
+#app {
+    width: 100%;
+    height: 100%;
+    background: var(--app-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 28px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+#header {
+    padding: 14px 20px;
+    background: rgba(255, 255, 255, 0.6);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    color: var(--ai-text);
+}
+
+#custom-title {
+    border: none;
+    background: transparent;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--ai-text);
+    outline: none;
+    flex: 1;
+}
+
+#logout-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--ai-text);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.toolbar {
+    display: flex;
+    gap: 6px;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.6);
+    border-bottom: 1px solid var(--border-color);
+    flex-wrap: wrap;
+}
+
+.tool-btn {
+    background: var(--ai-bubble);
+    border: 1px solid var(--border-color);
+    color: var(--ai-text);
+    padding: 6px 14px;
+    border-radius: 40px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: 0.15s;
+}
+
+.tool-btn:active {
+    transform: scale(0.95);
+    background: var(--accent-color);
+    color: white;
+}
+
+#chat-box {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.message {
+    display: flex;
+    flex-direction: column;
+    max-width: 85%;
+    animation: fadeIn 0.2s;
+}
+
+.user-message {
+    align-self: flex-end;
+}
+
+.ai-message {
+    align-self: flex-start;
+}
+
+.message-content {
+    padding: 12px 18px;
+    border-radius: var(--border-radius-bubble);
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.user-message .message-content {
+    background: var(--user-bubble);
+    color: var(--user-text);
+    border-bottom-right-radius: 6px;
+}
+
+.ai-message .message-content {
+    background: var(--ai-bubble);
+    border: 1px solid var(--border-color);
+    color: var(--ai-text);
+    border-bottom-left-radius: 6px;
+}
+
+.system-message {
+    align-self: center;
+    background: rgba(128, 128, 128, 0.15);
+    padding: 6px 16px;
+    border-radius: 40px;
+    font-size: 12px;
+    color: var(--ai-text);
+    max-width: 80%;
+    text-align: center;
+    backdrop-filter: blur(5px);
+}
+
+#input-area {
+    padding: 14px 18px;
+    background: rgba(255, 255, 255, 0.6);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+#user-input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 28px;
+    padding: 12px 18px;
+    font-size: 16px;
+    resize: none;
+    color: var(--ai-text);
+    font-family: inherit;
+    max-height: 120px;
+    outline: none;
+}
+
+#user-input:focus {
+    border-color: var(--accent-color);
+}
+
+#send-btn {
+    background: var(--accent-color);
+    border: none;
+    color: white;
+    width: 50px;
+    height: 50px;
+    border-radius: 30px;
+    font-size: 22px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.15s;
+    flex-shrink: 0;
+}
+
+#send-btn:active {
+    transform: scale(0.92);
+}
+
+#send-btn:disabled {
+    opacity: 0.5;
+}
+
+/* 登录界面 */
+#login-container {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 40px 30px;
+    border-radius: 32px;
+    width: 100%;
+    max-width: 380px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+    margin: 0 auto;
+}
+
+#login-container h1 {
+    font-size: 3rem;
+    margin: 0 0 8px;
+}
+
+#login-container h2 {
+    margin: 0 0 8px;
+    color: #1e1e2a;
+}
+
+#login-container p {
+    color: #5a5a7a;
+    margin-bottom: 24px;
+}
+
+#password-input {
+    width: 100%;
+    padding: 16px 20px;
+    font-size: 18px;
+    border: 2px solid #e0e0f0;
+    border-radius: 60px;
+    outline: none;
+    text-align: center;
+    letter-spacing: 4px;
+    background: white;
+    box-sizing: border-box;
+    margin-bottom: 20px;
+}
+
+#password-input:focus {
+    border-color: #1a1a2c;
+}
+
+#login-btn {
+    width: 100%;
+    padding: 16px;
+    background: #1a1a2c;
+    color: white;
+    border: none;
+    border-radius: 60px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.15s;
+}
+
+#login-btn:active {
+    transform: scale(0.97);
+    background: #2d2d44;
+}
+
+#login-error {
+    color: #e53e3e;
+    margin-top: 16px;
+    font-size: 14px;
+    min-height: 20px;
+}
+
+/* 动画 */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 响应式 */
+@media (max-width: 480px) {
+    body {
+        padding: 8px;
+    }
+    .tool-btn {
+        padding: 5px 12px;
+        font-size: 12px;
+    }
+}
