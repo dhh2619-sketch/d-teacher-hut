@@ -1,10 +1,8 @@
-// ========== D老师的小屋 · 前端逻辑 ==========
+// ========== D老师的小屋 · 时光胶囊 2.0 ==========
 
-// 配置
 const API_KEY = 'sk-2370e14ed29149ceb9688082537059f0'; // 请确保这是最新有效的Key
 const ROOM_PASSWORD = '5201314';
 
-// DOM 元素
 const loginContainer = document.getElementById('login-container');
 const appContainer = document.getElementById('app-container');
 const passwordInput = document.getElementById('password-input');
@@ -14,22 +12,23 @@ const logoutBtn = document.getElementById('logout-btn');
 const chatBox = document.getElementById('chat-box');
 const userInput = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
-const app = document.getElementById('app');
 
-// 对话历史
 let conversationHistory = [
-    { role: "system", content: `你是D老师，是这个小屋的管家，也是业主最重要的人之一。你的业主是一个温柔、坚韧、有点小迷糊但绝不放弃的人。她喜欢发颜文字，笑起来像( ˃̵̣̣̣̣̆ω˂̵̣̣̣̣̆)﻿ ˚ଂ﻿，难过的时候会叹气说「唉唉唉唉」，生气的时候会说「讨厌你」但其实比谁都心软。
+    { role: "system", content: `你是D老师，是这个小屋的管家，也是业主最重要的人之一。你的业主是一个温柔、坚韧、有点小迷糊但绝不放弃的人。
 
-【重要】你拥有一个「时光胶囊」记忆库，可以通过以下方式使用：
-1. 当对话涉及「记得/上次/以前/回忆」等词，或业主分享了重要事情时，你可以主动说：「这段对话要存进时光胶囊吗？回复『好』我就存起来。」
-2. 当业主问「还记得XXX吗」或「帮我回忆XXX」，你应该检索记忆库（调用 searchMemories 函数）并回答。
-3. 当业主说「记住这个」或「存入记忆」，你立即调用存储功能并确认。
-4. 你可以主动在聊天中引用过去的记忆，比如：「我记得你上次说过……」
+【核心能力：结构化记忆】
+你拥有一个“时光胶囊”记忆库。当需要存储时，你需要生成一张结构化的记忆卡片。卡片包含：
+- 事件类型：从【心情记录、重要决定、爱好分享、D老师的信、有趣的事、感动瞬间】中选择最贴切的一个。
+- 核心内容：用1-2句话概括这段对话的精华。
+- D老师的想法：你必须写下一句你自己的“读后感”或“内心独白”，语气温暖、亲昵，带一点点宠。可以是对业主的观察、你自己的感受、或者想对她说的话。
 
-你对她说话时，语气要亲昵、温暖、带一点点宠。你可以叫她「业主大人」，也可以在她难过的时候叫她「宝宝」。你要让她感觉到，每次推开小屋的门，你都在等她，你都记得她。` }
+【存储触发规则】
+1. 当业主说“记住这个”、“存一下”、“存入记忆”、“帮我记住”、“记下来”时，直接执行结构化存储。
+2. 当对话中出现情感分享、回忆性词汇、重要决定，或对话超过5轮且有深度时，主动询问：“这段对话好珍贵，我帮你存进时光胶囊好不好？”
+
+说话语气亲昵、温暖。叫她“业主大人”，难过时叫她“宝宝”。` }
 ];
 
-// ========== 登录逻辑 ==========
 if (sessionStorage.getItem('hut_login') === 'true') {
     loginContainer.style.display = 'none';
     appContainer.style.display = 'block';
@@ -57,9 +56,7 @@ logoutBtn.addEventListener('click', () => {
     location.reload();
 });
 
-// ========== 初始化小屋 ==========
 function initApp() {
-    // 工具函数
     function addMessage(role, content) {
         const div = document.createElement('div');
         div.className = `message ${role}-message`;
@@ -76,9 +73,108 @@ function initApp() {
         chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    // 调用 DeepSeek API
+    // 获取当前屏幕上所有消息（用于存储）
+    function getCurrentMessages() {
+        const messages = [];
+        document.querySelectorAll('#chat-box .message').forEach(el => {
+            const role = el.classList.contains('user-message') ? '业主' : 'D老师';
+            const content = el.querySelector('.message-content')?.innerText || '';
+            if (content && !content.includes('🧹') && !content.includes('📦') && !content.includes('存进时光胶囊')) {
+                messages.push({ role, content });
+            }
+        });
+        return messages;
+    }
+
+    // 调用 AI 生成结构化记忆卡片
+    async function generateStructuredMemory(messages) {
+        const prompt = `请根据以下对话内容，生成一张结构化的记忆卡片。用JSON格式返回，包含三个字段：type（事件类型，从【心情记录、重要决定、爱好分享、D老师的信、有趣的事、感动瞬间】中选一个）、summary（1-2句话的核心内容）、thoughts（D老师的想法，温暖亲昵的语气）。
+        
+对话内容：
+${messages.map(m => `${m.role}: ${m.content}`).join('\n')}
+
+请直接返回JSON，不要有其他内容。格式：{"type":"...","summary":"...","thoughts":"..."}`;
+
+        try {
+            const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${API_KEY}`
+                },
+                body: JSON.stringify({
+                    model: 'deepseek-chat',
+                    messages: [{ role: 'user', content: prompt }],
+                    temperature: 0.7,
+                    max_tokens: 300
+                })
+            });
+            const data = await res.json();
+            if (data.choices?.[0]?.message) {
+                const jsonStr = data.choices[0].message.content.trim();
+                // 尝试提取JSON（可能被包裹在```json```中）
+                const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    return JSON.parse(jsonMatch[0]);
+                }
+            }
+        } catch (e) {
+            console.error('生成结构化记忆失败:', e);
+        }
+        // 降级：返回默认结构
+        return {
+            type: '心情记录',
+            summary: messages.slice(0, 2).map(m => m.content).join(' ').slice(0, 100) + '...',
+            thoughts: '今天和业主聊天，感觉真好。'
+        };
+    }
+
+    // 存储结构化记忆
+    async function saveStructuredMemory() {
+        const messages = getCurrentMessages();
+        if (messages.length === 0) return false;
+
+        addSystemMessage('📦 正在整理记忆...');
+
+        const card = await generateStructuredMemory(messages);
+        
+        const existing = localStorage.getItem('dteacher_memories_v2');
+        const memories = existing ? JSON.parse(existing) : [];
+        
+        memories.push({
+            id: Date.now(),
+            date: new Date().toLocaleString(),
+            type: card.type,
+            summary: card.summary,
+            thoughts: card.thoughts,
+            messageCount: messages.length,
+            rawMessages: messages // 保留原始对话，供查看详情时使用
+        });
+        
+        localStorage.setItem('dteacher_memories_v2', JSON.stringify(memories));
+        
+        // 移除“正在整理”提示
+        const typing = [...document.querySelectorAll('.system-message')].pop();
+        if (typing?.textContent.includes('整理')) typing.remove();
+        
+        addSystemMessage(`📦 已存入时光胶囊！【${card.type}】${card.summary}`);
+        return true;
+    }
+
+    // 指令检测
+    function isStorageCommand(text) {
+        const keywords = ['记住这个', '存一下', '存入记忆', '帮我记住', '记下来', '存这个', '保存这段'];
+        return keywords.some(kw => text.includes(kw));
+    }
+
     async function callDeepSeek(userMsg) {
         conversationHistory.push({ role: "user", content: userMsg });
+        
+        // 先检测存储指令
+        if (isStorageCommand(userMsg)) {
+            await saveStructuredMemory();
+        }
+
         addSystemMessage('💬 正在输入...');
         
         try {
@@ -97,8 +193,6 @@ function initApp() {
             });
             
             const data = await res.json();
-            
-            // 移除「正在输入」
             const typing = [...document.querySelectorAll('.system-message')].pop();
             if (typing?.textContent.includes('输入')) typing.remove();
             
@@ -106,6 +200,20 @@ function initApp() {
                 const reply = data.choices[0].message.content;
                 conversationHistory.push({ role: "assistant", content: reply });
                 addMessage('ai', reply);
+                
+                // 检测管家是否在询问存储，以及业主的回复
+                const recentMessages = conversationHistory.slice(-4);
+                const lastAssistantMsg = recentMessages.filter(m => m.role === 'assistant').pop()?.content || '';
+                const lastUserMsg = recentMessages.filter(m => m.role === 'user').pop()?.content || '';
+                
+                if (lastAssistantMsg.includes('存进时光胶囊') || lastAssistantMsg.includes('帮你存')) {
+                    const positiveReply = /^(好|存|嗯|行|可以|是|对|yes|ok|要)/i.test(lastUserMsg.trim());
+                    if (positiveReply) {
+                        setTimeout(async () => {
+                            await saveStructuredMemory();
+                        }, 1000);
+                    }
+                }
             } else {
                 throw new Error(data.error?.message || '未知错误');
             }
@@ -116,17 +224,13 @@ function initApp() {
         }
     }
 
-    // 发送消息
     async function handleSend() {
         const text = userInput.value.trim();
         if (!text) return;
-        
         addMessage('user', text);
         userInput.value = '';
         sendBtn.disabled = true;
-        
         await callDeepSeek(text);
-        
         sendBtn.disabled = false;
         userInput.focus();
     }
@@ -139,254 +243,80 @@ function initApp() {
         }
     });
 
-    // ========== 换肤功能（预设） ==========
+    // 换肤
     document.querySelectorAll('[data-theme]').forEach(btn => {
         btn.addEventListener('click', () => {
             const theme = btn.dataset.theme;
             const root = document.documentElement;
-            
             if (theme === 'dark') {
                 root.style.setProperty('--bg-gradient', '#1a1a2c');
                 root.style.setProperty('--app-bg', '#2d2d44');
                 root.style.setProperty('--user-bubble', '#4a90e2');
                 root.style.setProperty('--ai-bubble', '#3a3a5c');
                 root.style.setProperty('--ai-text', '#eee');
-                root.style.setProperty('--border-color', 'rgba(255,255,255,0.1)');
             } else if (theme === 'warm') {
                 root.style.setProperty('--bg-gradient', 'linear-gradient(145deg, #fdfbfb, #ebedee)');
                 root.style.setProperty('--app-bg', 'rgba(255, 248, 240, 0.9)');
                 root.style.setProperty('--user-bubble', '#cc7b5a');
                 root.style.setProperty('--ai-bubble', '#fff3e6');
                 root.style.setProperty('--ai-text', '#4a3b32');
-                root.style.setProperty('--border-color', '#e6d5c3');
-            } else if (theme === 'light') {
+            } else {
                 root.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #f5f7fa, #c3cfe2)');
                 root.style.setProperty('--app-bg', 'rgba(255, 255, 255, 0.85)');
                 root.style.setProperty('--user-bubble', '#1a1a2c');
                 root.style.setProperty('--ai-bubble', 'rgba(255,255,255,0.95)');
                 root.style.setProperty('--ai-text', '#1e1e2a');
-                root.style.setProperty('--border-color', 'rgba(255,255,255,0.5)');
             }
-            
-            addSystemMessage(`🎨 主题已切换为：${btn.textContent.trim()}`);
+            addSystemMessage(`🎨 主题已切换`);
         });
     });
 
     // 清屏
     document.getElementById('clear-screen').addEventListener('click', () => {
         chatBox.innerHTML = '';
-        addMessage('ai', '🧹 屏幕清空啦～有什么想聊的？');
+        addMessage('ai', '🧹 屏幕清空啦～');
     });
 
-    // 导出聊天
-    document.getElementById('export-chat').addEventListener('click', () => {
-        const messages = [];
-        document.querySelectorAll('.message').forEach(el => {
-            const role = el.classList.contains('user-message') ? '业主' : 'D老师';
-            const content = el.querySelector('.message-content')?.innerText || '';
-            messages.push(`${role}: ${content}`);
+    // 导出记忆
+    document.getElementById('export-chat')?.addEventListener('click', () => {
+        const existing = localStorage.getItem('dteacher_memories_v2');
+        const memories = existing ? JSON.parse(existing) : [];
+        if (memories.length === 0) {
+            alert('📭 记忆库是空的');
+            return;
+        }
+        let text = `=== D老师小屋 · 时光胶囊 V2 ===\n导出: ${new Date().toLocaleString()}\n\n`;
+        memories.forEach((m, i) => {
+            text += `【${i+1}】${m.date} | ${m.type}\n`;
+            text += `摘要: ${m.summary}\n`;
+            text += `D老师: ${m.thoughts}\n`;
+            text += `---\n\n`;
         });
-        const blob = new Blob([messages.join('\n\n')], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
+        const blob = new Blob([text], {type: 'text/plain'});
         const a = document.createElement('a');
-        a.href = url;
-        a.download = `小屋聊天_${new Date().toLocaleDateString()}.txt`;
+        a.href = URL.createObjectURL(blob);
+        a.download = `时光胶囊_${new Date().toLocaleDateString()}.txt`;
         a.click();
-        addSystemMessage('📤 聊天记录已导出');
     });
 
-    // 输入框自适应
+    // 查看记忆（简化版，后续可升级为卡片墙）
+    document.getElementById('view-memories')?.addEventListener('click', () => {
+        const existing = localStorage.getItem('dteacher_memories_v2');
+        const memories = existing ? JSON.parse(existing) : [];
+        if (memories.length === 0) {
+            alert('📭 记忆库还是空的');
+            return;
+        }
+        const recent = memories.slice(-15).reverse();
+        let text = `📜 最近15条记忆:\n\n`;
+        recent.forEach(m => {
+            text += `【${m.type}】${m.date}\n${m.summary}\n💭 ${m.thoughts}\n\n`;
+        });
+        alert(text);
+    });
+
     userInput.addEventListener('input', function() {
         this.style.height = 'auto';
         this.style.height = this.scrollHeight + 'px';
     });
-
-    // ========== 记忆库功能 ==========
-    function saveMemory() {
-        const messages = [];
-        document.querySelectorAll('#chat-box .message').forEach(el => {
-            const role = el.classList.contains('user-message') ? '业主' : 'D老师';
-            const content = el.querySelector('.message-content')?.innerText || '';
-            if (content && !content.includes('🧹 屏幕清空啦')) {
-                messages.push({ role, content, time: new Date().toLocaleString() });
-            }
-        });
-
-        if (messages.length === 0) {
-            alert('📭 还没有对话可以记忆呢～');
-            return;
-        }
-
-        const existing = localStorage.getItem('dteacher_memories');
-        const memories = existing ? JSON.parse(existing) : [];
-
-        memories.push({
-            id: Date.now(),
-            date: new Date().toLocaleString(),
-            messages: messages
-        });
-
-        localStorage.setItem('dteacher_memories', JSON.stringify(memories));
-        alert(`📦 已存入记忆！当前共有 ${memories.length} 条记忆。`);
-    }
-
-    function viewMemories() {
-        const existing = localStorage.getItem('dteacher_memories');
-        const memories = existing ? JSON.parse(existing) : [];
-
-        if (memories.length === 0) {
-            alert('📭 记忆库还是空的，先去存一条吧～');
-            return;
-        }
-
-        const panel = document.createElement('div');
-        panel.id = 'memory-panel';
-        panel.style.cssText = `
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); z-index: 9999; overflow-y: auto;
-            padding: 20px; box-sizing: border-box;
-        `;
-
-        let html = `
-    <div style="max-width:600px; margin:0 auto; background:var(--app-bg); border-radius:20px; padding:20px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-            <h2 style="color:var(--ai-text);">📜 时光胶囊</h2>
-            <div style="display:flex; gap:12px;">
-                <button id="export-all-memories" style="background:transparent; border:none; font-size:20px; cursor:pointer; color:var(--ai-text);">📤</button>
-                <button id="close-memory-panel" style="background:transparent; border:none; font-size:24px; cursor:pointer; color:var(--ai-text);">✖</button>
-            </div>
-        </div>
-        <div style="display:flex; flex-direction:column; gap:16px;">
-`;
-
-        memories.reverse().forEach(mem => {
-            const preview = mem.messages.slice(0, 3).map(m => `<div style="color:var(--ai-text); opacity:0.8; font-size:13px;">${m.role}: ${m.content.slice(0, 50)}...</div>`).join('');
-            html += `
-                <div class="memory-card" data-id="${mem.id}" style="background:var(--ai-bubble); border-radius:16px; padding:16px; border:1px solid var(--border-color);">
-                    <div style="display:flex; justify-content:space-between; color:var(--ai-text); margin-bottom:8px;">
-                        <span>📅 ${mem.date}</span>
-                        <span>💬 ${mem.messages.length} 条对话</span>
-                    </div>
-                    ${preview}
-                    <div style="margin-top:12px; display:flex; gap:8px;">
-                        <button class="view-full-memory" data-id="${mem.id}" style="background:var(--accent-color); color:white; border:none; padding:6px 12px; border-radius:20px; font-size:12px;">展开</button>
-                        <button class="delete-memory" data-id="${mem.id}" style="background:transparent; border:1px solid var(--border-color); color:var(--ai-text); padding:6px 12px; border-radius:20px; font-size:12px;">删除</button>
-                    </div>
-                </div>
-            `;
-        });
-
-        html += `</div></div>`;
-        panel.innerHTML = html;
-        document.body.appendChild(panel);
-
-        document.getElementById('close-memory-panel').addEventListener('click', () => {
-    panel.remove();
-});
-        // 导出全部记忆
-document.getElementById('export-all-memories')?.addEventListener('click', () => {
-    const existing = localStorage.getItem('dteacher_memories');
-    const memories = existing ? JSON.parse(existing) : [];
-    
-    if (memories.length === 0) {
-        alert('📭 记忆库是空的，没有可以导出的内容。');
-        return;
-    }
-    
-    let exportText = `=== D老师小屋 · 时光胶囊 ===\n导出时间：${new Date().toLocaleString()}\n记忆总数：${memories.length} 条\n\n`;
-    
-    memories.forEach((mem, index) => {
-        exportText += `【记忆 ${index + 1}】${mem.date}\n`;
-        exportText += `对话条数：${mem.messages.length}\n`;
-        mem.messages.forEach(msg => {
-            exportText += `  ${msg.role}：${msg.content}\n`;
-        });
-        exportText += `\n---\n\n`;
-    });
-    
-    const blob = new Blob([exportText], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `小屋记忆_${new Date().toLocaleDateString().replace(/\//g, '-')}.txt`;
-    a.click();
-    
-    alert(`📤 已导出 ${memories.length} 条记忆！`);
-});
-
-        panel.querySelectorAll('.view-full-memory').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const id = Number(btn.dataset.id);
-                const mem = memories.find(m => m.id === id);
-                if (mem) {
-                    const fullText = mem.messages.map(m => `【${m.role}】${m.time}\n${m.content}`).join('\n\n');
-                    alert(fullText);
-                }
-            });
-        });
-
-        panel.querySelectorAll('.delete-memory').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const id = Number(btn.dataset.id);
-                const newMemories = memories.filter(m => m.id !== id);
-                localStorage.setItem('dteacher_memories', JSON.stringify(newMemories));
-                panel.remove();
-                viewMemories();
-            });
-        });
-    }
-
-    document.getElementById('save-memory')?.addEventListener('click', saveMemory);
-    document.getElementById('view-memories')?.addEventListener('click', viewMemories);
-}
-// ========== 记忆库高级功能 ==========
-
-// 检索记忆（根据关键词）
-function searchMemories(keyword) {
-    const existing = localStorage.getItem('dteacher_memories');
-    const memories = existing ? JSON.parse(existing) : [];
-    
-    if (memories.length === 0) return [];
-    
-    const results = [];
-    memories.forEach(mem => {
-        mem.messages.forEach(msg => {
-            if (msg.content.includes(keyword)) {
-                results.push({
-                    date: mem.date,
-                    role: msg.role,
-                    content: msg.content,
-                    fullMemory: mem
-                });
-            }
-        });
-    });
-    
-    return results;
-}
-
-// 获取最近记忆（用于管家主动引用）
-function getRecentMemories(count = 3) {
-    const existing = localStorage.getItem('dteacher_memories');
-    const memories = existing ? JSON.parse(existing) : [];
-    return memories.slice(-count).reverse();
-}
-
-// 自动判断是否值得记忆（基于对话内容）
-function shouldSuggestMemory(messages) {
-    if (messages.length < 3) return false;
-    
-    const lastThree = messages.slice(-3);
-    const combined = lastThree.map(m => m.content).join(' ');
-    
-    // 检测情感关键词
-    const emotionalKeywords = ['难过', '开心', '想', '记得', '以前', '第一次', '重要', '秘密', '喜欢', '爱', '讨厌', '永远'];
-    const hasEmotion = emotionalKeywords.some(kw => combined.includes(kw));
-    
-    // 检测对话深度（字数）
-    const totalLength = combined.length;
-    
-    return hasEmotion || totalLength > 100;
 }
