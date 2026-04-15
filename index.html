@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>🏠 D老师·有管家的小屋</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- 登录界面 -->
+<div id="login-container">
+    <h1>🏠</h1>
+    <h2>D老师的小屋</h2>
+    <p>输入密码进入</p>
+    <input type="password" id="password-input" placeholder="••••••" maxlength="20">
+    <button id="login-btn">进入小屋</button>
+    <div id="login-error"></div>
+</div>
+
+<!-- 主界面（默认隐藏） -->
+<div id="app-container" style="display:none;">
+    <div id="app">
+        <div id="header">
+            <span>🏠</span>
+            <span id="custom-title">D老师·有管家的小屋</span>
+            <button id="logout-btn">🚪 离开</button>
+        </div>
+        <div class="toolbar">
+            <button class="tool-btn" data-theme="dark">🌙 深色</button>
+            <button class="tool-btn" data-theme="warm">☕ 暖黄</button>
+            <button class="tool-btn" data-theme="light">☁️ 极简</button>
+            <button class="tool-btn" id="clear-screen">🧹 清屏</button>
+            <button class="tool-btn" id="export-chat">📤 导出</button>
+        </div>
+        <div id="chat-box">
+            <div class="message ai-message">
+                <div class="message-content">
+                    🏡 欢迎回家！<br><br>
+                    <b>现在你可以远程装修了：</b><br>
+                    • 在聊天框说「改背景：深蓝色」<br>
+                    • 说「改气泡：粉色」<br>
+                    • 说「重置样式」<br><br>
+                    👉 试试看？
+                </div>
+            </div>
+        </div>
+        <div id="input-area">
+            <textarea id="user-input" placeholder="说点什么，或者下个装修指令…" rows="1"></textarea>
+            <button id="send-btn">➤</button>
+        </div>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
